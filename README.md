@@ -54,3 +54,6 @@ model.fit(
 y_pred = model.predict(X_test)
 
  ```
+
+## References
+- [Modeling Task Relationships in Multi-task Learning with Multi-gate Mixture-of-Experts](https://dl.acm.org/doi/pdf/10.1145/3219819.3220007)
