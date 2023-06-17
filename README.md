@@ -8,10 +8,10 @@ This repository contains the implementation three architectures for multi-task l
 ![Architecture](resources/multitask-learning-architectures.png)
 
 - Shared bottom is the simplest architecture. Inputs are projected to an embedding space and an encoder learns a global representation that is shared by every task. It is used as input for task-specific encoders (called towers in the litterature) that output the final predictions for every tasks.
-- Mixture of experts uses an ensemble of encoders (called experts) shared by all tasks that takes a global embedding projection as input to learn different representations of it. Each task-specific encoders take a linear combination of experts outputs as input, using a global gating mechanism. Task-specific encoders then projects it to its own task-specific space.
+- Mixture of experts uses an ensemble of encoders (called experts) shared by all tasks that takes a global embedding projection as input to learn different representations of the data. Each task-specific encoders take a linear combination of experts outputs as input, using a global gating mechanism. Task-specific encoders then projects it to their own task-specific space.
 - Multi-gate mixture of experts is very similar to the mixture of expert model with the difference being that each tasks has its own gate so that it can route information of the different expert representations to better model its task.
 
-In the implementation of this repository, gates are simple linear projection with a softmax activation. In addition, every tasks encoders have the same architecture but it can easily be adapted to fit more complex applications. An example of a custom multi-task loss is implemented in `models/loss.py`, to model multiple binary classification tasks.
+In the implementation of this repository, gates are simple linear projection with a softmax activation. In addition, every tasks encoders have the same architecture for simplicity sake, but it can easily be adapted to fit more complex applications. An example of a custom multi-task loss is implemented in `models/loss.py`, to model multiple binary classification tasks.
 
 ## Dependencies
 
