@@ -1,6 +1,12 @@
 # Multi-task learning
 
-This repository contains the implementation three architectures for multi-task learning: shared bottom (a), mixture of experts (b) and multi-gate mixture of experts (c). Multi-task learning is a paradigm where one model learns different tasks jointly by sharing some of its parameters across tasks. It allows to save on resources (compute time, memory, one unique pipeline for several prediction tasks, etc...) and even improve prediction performances for tasks that are related and correlated. Nevertheless, it can also suffer from negative transfer for tasks that are too different or with contradictory objectives.
+This repository contains the implementation three architectures for multi-task learning: shared bottom (a), mixture of experts (b) and multi-gate mixture of experts (c). Multi-task learning is a paradigm where one model learns different tasks jointly by sharing some of its parameters across tasks. It allows to save on resources (compute time, memory), reduce engineering complexity and points of failure of prediction pipelines, and even improve prediction performances for tasks that are correlated where information sharing is beneficial. Nevertheless, it can also suffer from negative transfer for tasks that are too different or with contradictory objectives.
+
+One industry application of this paradigm is to model the funnel in advertising. Inputs are usually the same for CTR and CVR tasks: user and item characteristics but the feedback and sample space differ. One can encode special properties of the funnel directly into the architecture and the loss to improve the overall performance of the system:
+
+- encode the causal nature of the funnel: a conversion happens after a click, hence P(click) >= P(conversion). It can be encoded as a penalty term in the loss function.
+- encode the difference in sample space: one cannot have a conversion without a click. For a two-task problem modeling CTR and CVR, the loss could then be: $ \mathcal{L}_CTR + \mathcal{L}\_CVR $ where $ \mathcal{L}\_CVR = y_{CTR}y*{CVR} \cdot log( \hat{y}*{CTR}\hat{y}_{CVR} ) + (1 - y_{CTR}y*{CVR}) \cdot log (1 - \hat{y}*{CTR}\hat{y}\_{CVR}) $.
+- have different experts for the different entities represented in the data (such as user and item) like in Two-towers architecture.
 
 ## Models
 
