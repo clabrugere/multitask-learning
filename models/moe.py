@@ -27,7 +27,6 @@ class MixtureOfExperts(tf.keras.Model):
         self.dim_emb = dim_emb
 
         # embedding layer
-        # embedding layer
         self.embedding = tf.keras.layers.Embedding(
             input_dim=num_emb,
             output_dim=dim_emb,
@@ -45,6 +44,7 @@ class MixtureOfExperts(tf.keras.Model):
         for _ in range(num_tasks):
             self.towers.append(MLP(num_hidden_tasks, dim_hidden_tasks, dim_out_tasks, dropout=dropout_tasks))
 
+        # gate dynamically weights each expert output. A temperature scaling in the softmax might improve performance
         self.gate = tf.keras.layers.Dense(num_experts, activation=gate_function, use_bias=False)
 
     def call(self, inputs, training=None):

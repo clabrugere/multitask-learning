@@ -40,6 +40,8 @@ class MultiGateMixtureOfExperts(tf.keras.Model):
             self.experts.append(MLP(num_hidden_expert, dim_hidden_expert, dropout=dropout_expert))
 
         # encoders and gates for each task
+        # gates dynamically weight each expert output for their respective tasks.
+        # A temperature scaling in the softmax might improve performance
         self.towers = []
         self.gates = []
         for _ in range(num_tasks):

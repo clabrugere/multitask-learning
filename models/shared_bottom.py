@@ -24,7 +24,8 @@ class SharedBottom(tf.keras.Model):
         self.num_tasks = num_tasks
         self.dim_emb = dim_emb
 
-        # embedding layer
+        # embedding layer. In the exemple it is assumed the input is sparse and discrete hence the
+        # use of an embedding layer
         self.embedding = tf.keras.layers.Embedding(
             input_dim=num_emb,
             output_dim=dim_emb,
@@ -32,10 +33,10 @@ class SharedBottom(tf.keras.Model):
             embeddings_regularizer=tf.keras.regularizers.l2(l2=embedding_l2),
         )
 
-        # shared encoder
+        # shared encoder, it can have any architecture
         self.shared_encoder = MLP(num_hidden_shared, dim_hidden_shared, dropout=dropout_shared)
 
-        # encoders for each task
+        # encoders for each task. They can have different architectures depending on the task
         self.towers = []
         for _ in range(num_tasks):
             self.towers.append(MLP(num_hidden_tasks, dim_hidden_tasks, dim_out_tasks, dropout=dropout_tasks))
