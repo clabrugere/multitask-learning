@@ -5,7 +5,7 @@ This repository contains the implementation three architectures for multi-task l
 One industry application of this paradigm is to model the funnel in advertising. Inputs are usually the same for CTR and CVR tasks: user and item characteristics but the feedback and sample space differ. One can encode special properties of the funnel directly into the architecture and the loss to improve the overall performance of the system:
 
 - encode the causal nature of the funnel: a conversion happens after a click, hence P(click) >= P(conversion). It can be encoded as a penalty term in the loss function.
-- encode the difference in sample space: one cannot have a conversion without a click. For a two-task problem modeling CTR and CVR, the loss could then be: $ \mathcal{L}_CTR + \mathcal{L}\_CVR $ where $ \mathcal{L}\_CVR = y_{CTR}y*{CVR} \cdot log( \hat{y}*{CTR}\hat{y}_{CVR} ) + (1 - y_{CTR}y*{CVR}) \cdot log (1 - \hat{y}*{CTR}\hat{y}\_{CVR}) $.
+- encode the difference in sample space: one cannot have a conversion without a click. For a two-task problem modeling CTR and CVR, the loss could then be: $` \mathcal{L}_CTR + \mathcal{L}\_CVR `$ where $` \mathcal{L}\_CVR = y_{CTR}y*{CVR} \cdot log( \hat{y}*{CTR}\hat{y}_{CVR} ) + (1 - y_{CTR}y*{CVR}) \cdot log (1 - \hat{y}*{CTR}\hat{y}\_{CVR}) `$.
 - have different experts for the different entities represented in the data (such as user and item) like in Two-towers architecture.
 
 ## Models
