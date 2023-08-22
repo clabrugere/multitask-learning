@@ -15,6 +15,6 @@ class MultiTaskBCE(tf.losses.Loss):
     def call(self, y_true, y_pred):
         bce = tf.keras.metrics.binary_crossentropy(y_true, y_pred)  # (bs, num_tasks)
         loss = self.task_weights * tf.reduce_mean(bce, axis=0)  # (1, num_tasks)
-        loss = tf.reduce_sum(bce)  # (1)
+        loss = tf.reduce_sum(loss)  # (1)
 
         return loss
