@@ -57,10 +57,10 @@ class MixtureOfExperts(tf.keras.Model):
 
         out_experts = tf.stack(out_experts, axis=-1)  # (bs, num_hidden_expert, num_experts)
         gate_score = self.gate(embeddings, training=training)  # (bs, num_experts)
-
+        in_task = tf.einsum("bie,be->bi", out_experts, gate_score)  # (bs, num_hidden_expert)
+        
         out_tasks = []
         for tower in self.towers:
-            in_task = tf.einsum("bie,be->bi", out_experts, gate_score)  # (bs, num_hidden_expert)
             logits_task = tower(in_task, training=training)  # (bs, 1)
             out_tasks.append(logits_task)
 
