@@ -7,6 +7,7 @@ class MixtureOfExperts(tf.keras.Model):
         self,
         dim_input,
         num_tasks,
+        dim_continuous,
         num_emb,
         dim_emb=32,
         embedding_l2=0.0,
@@ -27,6 +28,7 @@ class MixtureOfExperts(tf.keras.Model):
         self.dim_emb = dim_emb
 
         # embedding layer
+        self.continuous_proj = tf.keras.layers.Dense(dim_continuous)
         self.embedding = tf.keras.layers.Embedding(
             input_dim=num_emb,
             output_dim=dim_emb,
@@ -47,9 +49,11 @@ class MixtureOfExperts(tf.keras.Model):
         # gate dynamically weights each expert output. A temperature scaling in the softmax might improve performance
         self.gate = tf.keras.layers.Dense(num_experts, activation=gate_function, use_bias=False)
 
-    def call(self, inputs, training=None):
-        embeddings = self.embedding(inputs, training=training)  # (bs, dim_input, dim_emb)
-        embeddings = tf.reshape(embeddings, (-1, self.dim_input * self.dim_emb))  # (bs, dim_input * dim_emb)
+    def call(self, dense_inputs, discrete_inputs, training=None):
+        emb_continuous = self.continuous_proj(dense_inputs, training=training)  # (bs, dim_continuous)
+        emb_discrete = self.embedding(discrete_inputs, training=training)  # (bs, dim_input, dim_emb)
+        emb_discrete = tf.reshape(emb_discrete, (-1, self.dim_input * self.dim_emb))  # (bs, dim_input * dim_emb)
+        embeddings = tf.concat((emb_continuous, emb_discrete), axis=-1)  # (bs, dim_input * dim_emb + dim_continuous)
 
         out_experts = []
         for expert in self.experts:

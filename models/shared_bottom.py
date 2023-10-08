@@ -7,6 +7,7 @@ class SharedBottom(tf.keras.Model):
         self,
         dim_input,
         num_tasks,
+        dim_continuous,
         num_emb,
         dim_emb=32,
         embedding_l2=0.0,
@@ -22,10 +23,10 @@ class SharedBottom(tf.keras.Model):
 
         self.dim_input = dim_input
         self.num_tasks = num_tasks
+        self.dim_continuous = dim_continuous
         self.dim_emb = dim_emb
 
-        # embedding layer. In the exemple it is assumed the input is sparse and discrete hence the
-        # use of an embedding layer
+        self.continuous_proj = tf.keras.layers.Dense(dim_continuous)
         self.embedding = tf.keras.layers.Embedding(
             input_dim=num_emb,
             output_dim=dim_emb,
@@ -41,9 +42,11 @@ class SharedBottom(tf.keras.Model):
         for _ in range(num_tasks):
             self.towers.append(MLP(num_hidden_tasks, dim_hidden_tasks, dim_out_tasks, dropout=dropout_tasks))
 
-    def call(self, inputs, training=False):
-        embeddings = self.embedding(inputs, training=training)  # (bs, dim_input, dim_emb)
-        embeddings = tf.reshape(embeddings, (-1, self.dim_input * self.dim_emb))  # (bs, dim_input * dim_emb)
+    def call(self, dense_inputs, discrete_inputs, training=None):
+        emb_continuous = self.continuous_proj(dense_inputs, training=training)  # (bs, dim_continuous)
+        emb_discrete = self.embedding(discrete_inputs, training=training)  # (bs, dim_input, dim_emb)
+        emb_discrete = tf.reshape(emb_discrete, (-1, self.dim_input * self.dim_emb))  # (bs, dim_input * dim_emb)
+        embeddings = tf.concat((emb_continuous, emb_discrete), axis=-1)  # (bs, dim_input * dim_emb + dim_continuous)
 
         latent_shared = self.shared_encoder(embeddings, training=training)  # (bs, dim_hidden_shared)
 
