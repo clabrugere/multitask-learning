@@ -28,7 +28,7 @@ class MixtureOfExperts(tf.keras.Model):
         self.dim_emb = dim_emb
 
         # embedding layer
-        self.continuous_proj = tf.keras.layers.Dense(dim_continuous)
+        self.continuous_proj = tf.keras.layers.Dense(dim_emb)
         self.embedding = tf.keras.layers.Embedding(
             input_dim=num_emb,
             output_dim=dim_emb,
@@ -62,7 +62,7 @@ class MixtureOfExperts(tf.keras.Model):
         out_experts = tf.stack(out_experts, axis=-1)  # (bs, num_hidden_expert, num_experts)
         gate_score = self.gate(embeddings, training=training)  # (bs, num_experts)
         in_task = tf.einsum("bie,be->bi", out_experts, gate_score)  # (bs, num_hidden_expert)
-        
+
         out_tasks = []
         for tower in self.towers:
             logits_task = tower(in_task, training=training)  # (bs, 1)

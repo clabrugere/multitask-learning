@@ -26,7 +26,7 @@ class SharedBottom(tf.keras.Model):
         self.dim_continuous = dim_continuous
         self.dim_emb = dim_emb
 
-        self.continuous_proj = tf.keras.layers.Dense(dim_continuous)
+        self.continuous_proj = tf.keras.layers.Dense(dim_emb)
         self.embedding = tf.keras.layers.Embedding(
             input_dim=num_emb,
             output_dim=dim_emb,
