@@ -42,7 +42,7 @@ class SharedBottom(tf.keras.Model):
             self.towers.append(MLP(num_hidden_tasks, dim_hidden_tasks, dim_out_tasks, dropout=dropout_tasks))
 
     def call(self, inputs: list[tf.Tensor], training: bool | None = None) -> tf.Tensor:
-        dense_inputs, categorical_inputs = inputs
+        categorical_inputs, dense_inputs = inputs
 
         emb_continuous = self.continuous_proj(dense_inputs, training=training)
         emb_categorical = self.embedding(categorical_inputs, training=training)

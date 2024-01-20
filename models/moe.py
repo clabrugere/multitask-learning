@@ -50,7 +50,7 @@ class MixtureOfExperts(tf.keras.Model):
         self.gate = tf.keras.layers.Dense(num_experts, activation=gate_function, use_bias=False)
 
     def call(self, inputs: list[tf.Tensor], training: bool | None = None) -> tf.Tensor:
-        dense_inputs, categorical_inputs = inputs
+        categorical_inputs, dense_inputs = inputs
 
         emb_continuous = self.continuous_proj(dense_inputs, training=training)  # (bs, dim_continuous)
         emb_discrete = self.embedding(categorical_inputs, training=training)  # (bs, dim_input, dim_emb)
