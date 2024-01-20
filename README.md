@@ -41,17 +41,17 @@ train_data = ...
 val_data = ...
 
 model = MultiGateMixtureOfExperts(
-   dim_input=num_features,
+   dim_categorical=num_categorical_features,
    num_tasks=num_tasks,
    num_emb=num_embeddings,
-   dim_emb=32,
+   ...
 )
 
 # train the model
 loss = MultiTaskBCE(num_tasks=num_tasks)
 optimizer = tf.keras.optimizers.Adam()
 
-model.compile(optimizer=optimizer, loss=loss, metrics=["mse"])
+model.compile(optimizer=optimizer, loss=loss)
 model.fit(
    train_data,
    validation_data=val_data,
