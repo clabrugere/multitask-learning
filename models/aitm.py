@@ -4,7 +4,7 @@ from models.mlp import MLP
 
 
 class AIT(tf.keras.layers.Layer):
-    def __init__(self, dim_hidden, dropout=0.0):
+    def __init__(self, dim_hidden: int, dropout: float = 0.0) -> None:
         super().__init__()
 
         self.query = tf.keras.layers.Dense(dim_hidden, use_bias=False)
@@ -18,7 +18,7 @@ class AIT(tf.keras.layers.Layer):
         self.value.build(input_shape)
         self.attention.build(input_shape)
 
-    def call(self, previous, current, training=None):
+    def call(self, previous: tf.Tensor, current: tf.Tensor, training: bool | None = None) -> tf.Tensor:
         z = tf.concat((tf.expand_dims(previous, 1), tf.expand_dims(current, 1)), axis=1)  # (bs, 2, dim_hidden)
 
         query = self.query(z, training=training)  # (bs, 2, dim_hidden)
