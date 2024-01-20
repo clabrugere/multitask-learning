@@ -1,13 +1,13 @@
 import tensorflow as tf
+
 from models.mlp import MLP
 
 
 class MixtureOfExperts(tf.keras.Model):
     def __init__(
         self,
-        dim_input,
+        dim_categorical,
         num_tasks,
-        dim_continuous,
         num_emb,
         dim_emb=32,
         embedding_l2=0.0,
@@ -23,7 +23,7 @@ class MixtureOfExperts(tf.keras.Model):
     ):
         super().__init__()
 
-        self.dim_input = dim_input
+        self.dim_categorical = dim_categorical
         self.num_tasks = num_tasks
         self.dim_emb = dim_emb
 
@@ -32,7 +32,7 @@ class MixtureOfExperts(tf.keras.Model):
         self.embedding = tf.keras.layers.Embedding(
             input_dim=num_emb,
             output_dim=dim_emb,
-            input_length=dim_input,
+            input_length=dim_categorical,
             embeddings_regularizer=tf.keras.regularizers.l2(l2=embedding_l2),
         )
 
@@ -49,10 +49,12 @@ class MixtureOfExperts(tf.keras.Model):
         # gate dynamically weights each expert output. A temperature scaling in the softmax might improve performance
         self.gate = tf.keras.layers.Dense(num_experts, activation=gate_function, use_bias=False)
 
-    def call(self, dense_inputs, discrete_inputs, training=None):
+    def call(self, inputs: list[tf.Tensor], training: bool | None = None) -> tf.Tensor:
+        dense_inputs, categorical_inputs = inputs
+
         emb_continuous = self.continuous_proj(dense_inputs, training=training)  # (bs, dim_continuous)
-        emb_discrete = self.embedding(discrete_inputs, training=training)  # (bs, dim_input, dim_emb)
-        emb_discrete = tf.reshape(emb_discrete, (-1, self.dim_input * self.dim_emb))  # (bs, dim_input * dim_emb)
+        emb_discrete = self.embedding(categorical_inputs, training=training)  # (bs, dim_input, dim_emb)
+        emb_discrete = tf.reshape(emb_discrete, (-1, self.dim_categorical * self.dim_emb))  # (bs, dim_input * dim_emb)
         embeddings = tf.concat((emb_continuous, emb_discrete), axis=-1)  # (bs, dim_input * dim_emb + dim_continuous)
 
         out_experts = []

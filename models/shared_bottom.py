@@ -1,36 +1,35 @@
 import tensorflow as tf
+
 from models.mlp import MLP
 
 
 class SharedBottom(tf.keras.Model):
     def __init__(
         self,
-        dim_input,
-        num_tasks,
-        dim_continuous,
-        num_emb,
-        dim_emb=32,
-        embedding_l2=0.0,
-        num_hidden_shared=2,
-        dim_hidden_shared=64,
-        dropout_shared=0.0,
-        num_hidden_tasks=2,
-        dim_hidden_tasks=64,
-        dim_out_tasks=1,
-        dropout_tasks=0.0,
-    ):
+        num_tasks: int,
+        dim_categorical: int,
+        num_emb: int,
+        dim_emb: int = 32,
+        embedding_l2: float = 0.0,
+        num_hidden_shared: int = 2,
+        dim_hidden_shared: int = 64,
+        dropout_shared: float = 0.0,
+        num_hidden_tasks: int = 2,
+        dim_hidden_tasks: int = 64,
+        dim_out_tasks: int = 1,
+        dropout_tasks: int = 0.0,
+    ) -> None:
         super().__init__()
 
-        self.dim_input = dim_input
+        self.dim_categorical = dim_categorical
         self.num_tasks = num_tasks
-        self.dim_continuous = dim_continuous
         self.dim_emb = dim_emb
 
         self.continuous_proj = tf.keras.layers.Dense(dim_emb)
         self.embedding = tf.keras.layers.Embedding(
             input_dim=num_emb,
             output_dim=dim_emb,
-            input_length=dim_input,
+            input_length=dim_categorical,
             embeddings_regularizer=tf.keras.regularizers.l2(l2=embedding_l2),
         )
 
@@ -42,20 +41,23 @@ class SharedBottom(tf.keras.Model):
         for _ in range(num_tasks):
             self.towers.append(MLP(num_hidden_tasks, dim_hidden_tasks, dim_out_tasks, dropout=dropout_tasks))
 
-    def call(self, dense_inputs, discrete_inputs, training=None):
-        emb_continuous = self.continuous_proj(dense_inputs, training=training)  # (bs, dim_continuous)
-        emb_discrete = self.embedding(discrete_inputs, training=training)  # (bs, dim_input, dim_emb)
-        emb_discrete = tf.reshape(emb_discrete, (-1, self.dim_input * self.dim_emb))  # (bs, dim_input * dim_emb)
-        embeddings = tf.concat((emb_continuous, emb_discrete), axis=-1)  # (bs, dim_input * dim_emb + dim_continuous)
+    def call(self, inputs: list[tf.Tensor], training: bool | None = None) -> tf.Tensor:
+        dense_inputs, categorical_inputs = inputs
 
-        latent_shared = self.shared_encoder(embeddings, training=training)  # (bs, dim_hidden_shared)
+        emb_continuous = self.continuous_proj(dense_inputs, training=training)
+        emb_categorical = self.embedding(categorical_inputs, training=training)
+        emb_categorical = tf.reshape(emb_categorical, (-1, self.dim_categorical * self.dim_emb))
+
+        embeddings = tf.concat((emb_continuous, emb_categorical), axis=-1)
+
+        latent_shared = self.shared_encoder(embeddings, training=training)
 
         out_tasks = []
         for tower in self.towers:
-            logits_task = tower(latent_shared, training=training)  # (bs, 1)
+            logits_task = tower(latent_shared, training=training)
             out_tasks.append(logits_task)
 
-        out = tf.concat(out_tasks, -1)  # (bs, num_tasks)
-        out = tf.nn.sigmoid(out)  # (bs, num_tasks)
+        out = tf.concat(out_tasks, -1)
+        out = tf.nn.sigmoid(out)
 
-        return out  # (bs, num_tasks)
+        return out
