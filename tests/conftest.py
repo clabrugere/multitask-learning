@@ -112,3 +112,13 @@ def aitm_model() -> AITM:
         dropout_proj_head=0.0,
         dim_out_tasks=1,
     )
+
+
+@pytest.fixture
+def model(request):
+    return request.getfixturevalue(request.param)
+
+
+@pytest.fixture
+def input(request):
+    return request.getfixturevalue(request.param)
