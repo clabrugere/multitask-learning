@@ -37,11 +37,11 @@ git clone https://github.com/clabrugere/multitask-learning.git
 
 ```python
 # load your dataset
-train_data = ...
-val_data = ...
+train_sparse_data = ...
+train_dense_data = ...
+train_labels = ...
 
 model = MultiGateMixtureOfExperts(
-   dim_categorical=num_categorical_features,
    num_tasks=num_tasks,
    num_emb=num_embeddings,
    ...
@@ -53,8 +53,8 @@ optimizer = tf.keras.optimizers.Adam()
 
 model.compile(optimizer=optimizer, loss=loss)
 model.fit(
-   train_data,
-   validation_data=val_data,
+   x=[train_sparse_data, train_dense_data],
+   y=train_labels,
    epochs=20,
 )
 
