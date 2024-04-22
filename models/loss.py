@@ -1,7 +1,8 @@
 import tensorflow as tf
+from keras.losses import Loss, binary_crossentropy
 
 
-class MultiTaskBCE(tf.losses.Loss):
+class MultiTaskBCE(Loss):
     def __init__(self, num_tasks: int, task_weights: list[float] = None) -> None:
         super().__init__()
 
@@ -13,7 +14,7 @@ class MultiTaskBCE(tf.losses.Loss):
             self.task_weights = task_weights
 
     def call(self, y_true: tf.Tensor, y_pred: tf.Tensor) -> tf.Tensor:
-        bce = tf.keras.metrics.binary_crossentropy(y_true, y_pred)  # (bs, num_tasks)
+        bce = binary_crossentropy(y_true, y_pred)  # (bs, num_tasks)
         loss = self.task_weights * tf.reduce_mean(bce, axis=0)  # (1, num_tasks)
         loss = tf.reduce_sum(loss)  # (1)
 

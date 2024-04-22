@@ -2,6 +2,7 @@ import pytest
 import tensorflow as tf
 
 from models import AITM, MLP, MixtureOfExperts, MultiGateMixtureOfExperts, SharedBottom
+from models.embedding import MultiInputEmbedding
 
 TRAIN_SIZE = 320
 NUM_TASKS = 2
@@ -36,6 +37,11 @@ def sample_dataset() -> tf.data.Dataset:
 
 
 @pytest.fixture
+def embedding_layer() -> MultiInputEmbedding:
+    return MultiInputEmbedding(num_categorical_emb=NUM_EMBEDDING, dim_emb=8)
+
+
+@pytest.fixture
 def mlp_model() -> MLP:
     return MLP(num_hidden=2, dim_hidden=16, dim_out=1)
 
@@ -43,7 +49,6 @@ def mlp_model() -> MLP:
 @pytest.fixture
 def shared_bottom_model() -> SharedBottom:
     return SharedBottom(
-        dim_categorical=NUM_CATEGORICAL,
         num_tasks=NUM_TASKS,
         num_emb=NUM_EMBEDDING,
         dim_emb=8,
@@ -61,7 +66,6 @@ def shared_bottom_model() -> SharedBottom:
 @pytest.fixture
 def moe_model() -> MixtureOfExperts:
     return MixtureOfExperts(
-        dim_categorical=NUM_CATEGORICAL,
         num_tasks=NUM_TASKS,
         num_emb=NUM_EMBEDDING,
         dim_emb=8,
@@ -80,7 +84,6 @@ def moe_model() -> MixtureOfExperts:
 @pytest.fixture
 def mgmoe_model() -> MultiGateMixtureOfExperts:
     return MultiGateMixtureOfExperts(
-        dim_categorical=NUM_CATEGORICAL,
         num_tasks=NUM_TASKS,
         num_emb=NUM_EMBEDDING,
         dim_emb=8,
@@ -99,7 +102,6 @@ def mgmoe_model() -> MultiGateMixtureOfExperts:
 @pytest.fixture
 def aitm_model() -> AITM:
     return AITM(
-        dim_categorical=NUM_CATEGORICAL,
         num_tasks=NUM_TASKS,
         num_emb=NUM_EMBEDDING,
         dim_emb=8,

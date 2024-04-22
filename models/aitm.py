@@ -1,16 +1,19 @@
 import tensorflow as tf
+from keras import Model, activations
+from keras.layers import Attention, Dense, Flatten, Layer
 
+from models.embedding import MultiInputEmbedding
 from models.mlp import MLP
 
 
-class AIT(tf.keras.layers.Layer):
-    def __init__(self, dim_hidden: int, dropout: float = 0.0) -> None:
-        super().__init__()
+class AIT(Layer):
+    def __init__(self, dim_hidden: int, dropout: float = 0.0, name="ait") -> None:
+        super().__init__(name=name)
 
-        self.query = tf.keras.layers.Dense(dim_hidden, use_bias=False)
-        self.key = tf.keras.layers.Dense(dim_hidden, use_bias=False)
-        self.value = tf.keras.layers.Dense(dim_hidden, use_bias=False)
-        self.attention = tf.keras.layers.Attention(dropout=dropout)
+        self.query = Dense(dim_hidden, use_bias=False)
+        self.key = Dense(dim_hidden, use_bias=False)
+        self.value = Dense(dim_hidden, use_bias=False)
+        self.attention = Attention(dropout=dropout)
 
     def build(self, input_shape):
         self.query.build(input_shape)
@@ -30,35 +33,30 @@ class AIT(tf.keras.layers.Layer):
         return tf.reduce_sum(out, axis=1)  # (bs, dim_hidden)
 
 
-class AITM(tf.keras.Model):
+class AITM(Model):
     def __init__(
         self,
-        dim_categorical,
-        num_tasks,
-        num_emb,
-        dim_emb=32,
-        embedding_l2=0.0,
-        num_hidden_tower=2,
-        dim_hidden_tower=64,
-        dropout_tower=0.0,
-        num_hidden_head=2,
-        dim_hidden_head=64,
-        dropout_proj_head=0.0,
-        dim_out_tasks=1,
+        num_tasks: int,
+        num_emb: int,
+        dim_emb: int = 32,
+        embedding_l2: float = 0.0,
+        num_hidden_tower: int = 2,
+        dim_hidden_tower: int = 64,
+        dropout_tower: float = 0.0,
+        num_hidden_head: int = 2,
+        dim_hidden_head: int = 64,
+        dropout_proj_head: float = 0.0,
+        dim_out_tasks: int = 1,
     ):
         super().__init__()
 
-        self.dim_categorical = dim_categorical
         self.num_tasks = num_tasks
-        self.dim_emb = dim_emb
-
-        self.continuous_proj = tf.keras.layers.Dense(dim_emb)
-        self.embedding = tf.keras.layers.Embedding(
-            input_dim=num_emb,
-            output_dim=dim_emb,
-            input_length=dim_categorical,
-            embeddings_regularizer=tf.keras.regularizers.l2(l2=embedding_l2),
+        self.embedding = MultiInputEmbedding(
+            num_categorical_emb=num_emb,
+            dim_emb=dim_emb,
+            regularization=embedding_l2,
         )
+        self.flatten = Flatten()
 
         # the transfer learning mechanism between two subsequent tasks is basically self-attention between the latent
         # representations of two consecutive tasks.
@@ -71,15 +69,13 @@ class AITM(tf.keras.Model):
             self.towers.append(MLP(num_hidden_tower, dim_hidden_tower, dropout=dropout_tower))
             self.proj_heads.append(MLP(num_hidden_head, dim_hidden_head, dim_out_tasks, dropout=dropout_proj_head))
             if i < num_tasks - 1:
-                self.gates.append(tf.keras.layers.Dense(dim_hidden_tower))
+                self.gates.append(Dense(dim_hidden_tower))
 
     def call(self, inputs: list[tf.Tensor], training: bool | None = None) -> tf.Tensor:
-        categorical_inputs, dense_inputs = inputs
+        sparse_inputs, dense_inputs = inputs
 
-        emb_continuous = self.continuous_proj(dense_inputs, training=training)  # (bs, dim_continuous)
-        emb_discrete = self.embedding(categorical_inputs, training=training)  # (bs, dim_input, dim_emb)
-        emb_discrete = tf.reshape(emb_discrete, (-1, self.dim_categorical * self.dim_emb))  # (bs, dim_input * dim_emb)
-        embeddings = tf.concat((emb_continuous, emb_discrete), axis=-1)  # (bs, dim_input * dim_emb + dim_continuous)
+        embeddings = self.embedding([sparse_inputs, dense_inputs])
+        embeddings = self.flatten(embeddings)
 
         q = [tower(embeddings, training=training) for tower in self.towers]  # [(bs, dim_hidden_tower), ...]
         for i in range(1, self.num_tasks):
@@ -87,6 +83,6 @@ class AITM(tf.keras.Model):
             q[i] = self.ait(p, q[i], training=training)  # (bs, dim_hidden_tower)
 
         out = tf.concat([head(x) for x, head in zip(q, self.proj_heads)], axis=-1)  # (bs, num_tasks)
-        out = tf.nn.sigmoid(out)  # (bs, num_tasks)
+        out = activations.sigmoid(out)  # (bs, num_tasks)
 
         return out

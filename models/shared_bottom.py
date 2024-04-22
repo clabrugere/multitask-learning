@@ -1,13 +1,15 @@
 import tensorflow as tf
+from keras import Model, activations
+from keras.layers import Flatten
 
+from models.embedding import MultiInputEmbedding
 from models.mlp import MLP
 
 
-class SharedBottom(tf.keras.Model):
+class SharedBottom(Model):
     def __init__(
         self,
         num_tasks: int,
-        dim_categorical: int,
         num_emb: int,
         dim_emb: int = 32,
         embedding_l2: float = 0.0,
@@ -21,17 +23,12 @@ class SharedBottom(tf.keras.Model):
     ) -> None:
         super().__init__()
 
-        self.dim_categorical = dim_categorical
-        self.num_tasks = num_tasks
-        self.dim_emb = dim_emb
-
-        self.continuous_proj = tf.keras.layers.Dense(dim_emb)
-        self.embedding = tf.keras.layers.Embedding(
-            input_dim=num_emb,
-            output_dim=dim_emb,
-            input_length=dim_categorical,
-            embeddings_regularizer=tf.keras.regularizers.l2(l2=embedding_l2),
+        self.embedding = MultiInputEmbedding(
+            num_categorical_emb=num_emb,
+            dim_emb=dim_emb,
+            regularization=embedding_l2,
         )
+        self.flatten = Flatten()
 
         # shared encoder, it can have any architecture
         self.shared_encoder = MLP(num_hidden_shared, dim_hidden_shared, dropout=dropout_shared)
@@ -42,14 +39,10 @@ class SharedBottom(tf.keras.Model):
             self.towers.append(MLP(num_hidden_tasks, dim_hidden_tasks, dim_out_tasks, dropout=dropout_tasks))
 
     def call(self, inputs: list[tf.Tensor], training: bool | None = None) -> tf.Tensor:
-        categorical_inputs, dense_inputs = inputs
+        sparse_inputs, dense_inputs = inputs
 
-        emb_continuous = self.continuous_proj(dense_inputs, training=training)
-        emb_categorical = self.embedding(categorical_inputs, training=training)
-        emb_categorical = tf.reshape(emb_categorical, (-1, self.dim_categorical * self.dim_emb))
-
-        embeddings = tf.concat((emb_continuous, emb_categorical), axis=-1)
-
+        embeddings = self.embedding([sparse_inputs, dense_inputs])
+        embeddings = self.flatten(embeddings)
         latent_shared = self.shared_encoder(embeddings, training=training)
 
         out_tasks = []
@@ -58,6 +51,6 @@ class SharedBottom(tf.keras.Model):
             out_tasks.append(logits_task)
 
         out = tf.concat(out_tasks, -1)
-        out = tf.nn.sigmoid(out)
+        out = activations.sigmoid(out)
 
         return out

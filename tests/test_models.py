@@ -1,10 +1,19 @@
 import pytest
 import tensorflow as tf
-from conftest import NUM_TASKS, TRAIN_SIZE
+from conftest import NUM_CATEGORICAL, NUM_CONTINUOUS, NUM_TASKS, TRAIN_SIZE
 from tensorflow import Tensor
 from tensorflow.python.keras import Model
 
 from models import MLP, MultiTaskBCE
+from models.embedding import MultiInputEmbedding
+
+
+def test_multi_input_embedding_output_shape(
+    embedding_layer: MultiInputEmbedding, sample_categorical_input: tf.Tensor, sample_continuous_input: tf.Tensor
+) -> None:
+    out = embedding_layer([sample_categorical_input, sample_continuous_input])
+
+    assert out.shape == (TRAIN_SIZE, NUM_CATEGORICAL + NUM_CONTINUOUS, 8)
 
 
 def test_mlp_output_shape(mlp_model: MLP, sample_continuous_input: tf.Tensor) -> None:
@@ -43,4 +52,4 @@ def test_model_training(model: Model, sample_dataset: tf.data.Dataset) -> None:
     model.compile(optimizer="adam", loss=MultiTaskBCE(NUM_TASKS))
     history = model.fit(x=sample_dataset, epochs=1)
 
-    assert len(history.history["loss"]) == 1
+    assert all(loss >= 0.0 for loss in history.history["loss"])
